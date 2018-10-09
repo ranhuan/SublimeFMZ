@@ -100,8 +100,8 @@ def SyncFile(filename, token, content):
             sublime.status_message(msg)
             robot_name = getRobotName(content)
             if robot_name:
-                msg = 'Hi ' + resp['user'] + ", sync success !\n\n[" + filename + "] saved to [" + resp['name'] + "],\nrobot [" + robot_name + "] restarted !"
-                restart_robot(robot_name)
+                if restart_robot(robot_name):
+                    msg = 'Hi ' + resp['user'] + ", sync success !\n\nstrategy [" + filename + "] saved to [" + resp['name'] + "],\nrobot [" + robot_name + "] restarted !"
             sublime.message_dialog(msg)
         else:
             if errCode == 405:
@@ -122,20 +122,18 @@ def SyncFile(filename, token, content):
 def restart_robot(robot_name):
     if robot_name:
         robots = api('GetRobotList')
-        #print(robots)
-        if robots['code'] != 0:
-            return
-        for robot in robots['data']['result']['robots']:
-            if robot['name'] == robot_name:
-                #print(robot)
-                if robot['status'] == 1:
-                    result = api('StopRobot', robot['id'])
-                    if result['code'] != 0:
-                        return
-                result = api('RestartRobot', robot['id'])
-                if result['code'] != 0:
-                    return
-                sublime.status_message("robot {} restarted !".format(robot_name))
+        if robots['code'] == 0:
+            for robot in robots['data']['result']['robots']:
+                if robot['name'] == robot_name:
+                    if robot['status'] == 1:
+                        result = api('StopRobot', robot['id'])
+                        if result['code'] == 0:
+                            return False
+                    result = api('RestartRobot', robot['id'])
+                    if result['code'] == 0:
+                        sublime.status_message("robot {} restarted !".format(robot_name))
+                        return True
+    return False
 
 
 class SaveOnModifiedListener(sublime_plugin.EventListener):
