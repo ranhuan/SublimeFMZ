@@ -10,7 +10,7 @@ FMZ - Sublime Plugin
 直接克隆当前仓库到 Sublime Text 2/3 packages directory.
     
 ```bash
-git clone https://github.com/fmzquant/SublimeFMZ.git
+git clone https://github.com/ranhuan/SublimeFMZ.git
 ```
 
 > 第二种方法:
@@ -25,3 +25,4 @@ git clone https://github.com/fmzquant/SublimeFMZ.git
 
 当你用Sublime保存带有token标识的策略源文件时, 该源文件会自动同步上传到FMZ服务器
 
+用# robot@机器人名字 指定机器人如果存在会自动重启
