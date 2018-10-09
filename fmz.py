@@ -28,11 +28,11 @@ except:
     import urllib.request as urllib2
     from urllib.parse import urlencode
 
-accessKey = 'ACCESS_KEY'
-secretKey = 'SECRET_KEY'
+accessKey = '111'
+secretKey = '111'
 
 pattern = re.compile(r'fmz@([a-zA-Z0-9]{32})')
-robotPattern = re.compile(r'robot@([\w ]+)')
+robotPattern = re.compile(r'robot@(\S+[\S ]*)')
 
 token_region = 'botvs_token'
 __version__ = '0.0.1'
@@ -60,14 +60,15 @@ def getToken(view):
     view.erase_status("fmz")
     return (None, None)
 
-def getRobotName(view):
-    content = view.substr(sublime.Region(0, view.size()))
-    pos = view.find("[ \t]*(//|#)\s*robot@[\w ]+[ \t]*$", 0)
+def getRobotName(content):
+    #print(content)
+    pos = content.find("^[ \t]*(//|#)\s*robot@\S+[\S ]*[ \t]*$", 0)
     if pos:
-        match = robotPattern.search(view.substr(pos))
+        match = robotPattern.search(content)
         if not match:
             sublime.error_message("Invalid FMZ robot name !")
         else:
+            print(match)
             return match.group(1)
     return None
 
@@ -97,6 +98,10 @@ def SyncFile(filename, token, content):
             success = True
             msg = 'Hi ' + resp['user'] + ", sync success !\n\n[" + filename + "] saved to [" + resp['name'] + "]"
             sublime.status_message(msg)
+            robot_name = getRobotName(content)
+            if robot_name:
+                msg = 'Hi ' + resp['user'] + ", sync success !\n\n[" + filename + "] saved to [" + resp['name'] + "],\nrobot [" + robot_name + "] restarted !"
+                restart_robot(robot_name)
             sublime.message_dialog(msg)
         else:
             if errCode == 405:
@@ -116,21 +121,22 @@ def SyncFile(filename, token, content):
 
 def restart_robot(robot_name):
     if robot_name:
-            robots = api('GetRobotList')
-            #print(robots)
-            if robots['code'] != 0:
-                return
-            for robot in robots['data']['result']['robots']:
-                if robot['name'] == robot_name:
-                    #print(robot)
-                    if robot['status'] == 1:
-                        result = api('StopRobot', robot['id'])
-                        if result['code'] != 0:
-                            return
-                    result = api('RestartRobot', robot['id'])
+        robots = api('GetRobotList')
+        #print(robots)
+        if robots['code'] != 0:
+            return
+        for robot in robots['data']['result']['robots']:
+            if robot['name'] == robot_name:
+                #print(robot)
+                if robot['status'] == 1:
+                    result = api('StopRobot', robot['id'])
                     if result['code'] != 0:
                         return
-                    sublime.status_message("robot {} restarted !".format(robot_name))
+                result = api('RestartRobot', robot['id'])
+                if result['code'] != 0:
+                    return
+                sublime.status_message("robot {} restarted !".format(robot_name))
+
 
 class SaveOnModifiedListener(sublime_plugin.EventListener):
     def on_load(self, view):
@@ -151,6 +157,3 @@ class SaveOnModifiedListener(sublime_plugin.EventListener):
         file_name = os.path.basename(view.file_name())
         if SyncFile(file_name, token, content):
             buf_cache[token] = rawContent
-
-        robot_name = getRobotName(view)
-        restart_robot(robot_name)
